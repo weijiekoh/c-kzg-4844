@@ -269,10 +269,7 @@ impl KZGSettings {
     /// Same as [`load_trusted_setup_file`](Self::load_trusted_setup_file)
     #[cfg_attr(not(feature = "std"), doc = ", but takes a `CStr` instead of a `Path`")]
     /// .
-    pub fn load_trusted_setup_file_inner(
-        file_path: &CStr,
-        precompute: u64,
-    ) -> Result<Self, Error> {
+    pub fn load_trusted_setup_file_inner(file_path: &CStr, precompute: u64) -> Result<Self, Error> {
         // SAFETY: `b"r\0"` is a valid null-terminated string.
         const MODE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"r\0") };
 
@@ -980,6 +977,34 @@ mod tests {
     const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/compute_cells_and_kzg_proofs/*/*/*";
     const RECOVER_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/recover_cells_and_kzg_proofs/*/*/*";
     const VERIFY_CELL_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
+
+    #[test]
+    fn benchmark_kzg() {
+        // TODO:
+        // - Write N BLS12-381 G1 Lagrange points to another src/trusted_setup.txt. Instead of
+        // generating these points, randomly sample them from the existing src/trusted_setup.txt.
+        //   - Need to parse the file correctly to only pick G1 points.
+        // - Construct an N-sized array of g1_t and fr_t
+        // - Benchmark do_kzg()
+        //
+
+        // Get points
+        let points = kzg_settings.g1_values_lagrange_brp;
+
+        let ones: fr_t = crate::bindings::blst_fr { l: [1u64; 4] };
+        let coeffs = [ones; NUM_G1_POINTS];
+
+        let mut output: MaybeUninit<g1_t> = MaybeUninit::uninit();
+        unsafe {
+            // Will probably print 0s
+            println!("{:?}", output.assume_init());
+
+            do_kzg(output.as_mut_ptr(), points as *const g1_t, coeffs.as_ptr(), NUM_G1_POINTS);
+
+            // Should print non-zero values
+            println!("{:?}", output.assume_init());
+        }
+    }
 
     #[test]
     fn test_blob_to_kzg_commitment() {

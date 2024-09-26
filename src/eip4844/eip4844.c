@@ -248,6 +248,11 @@ out:
     return ret;
 }
 
+// Function to benchmark
+C_KZG_RET do_kzg(g1_t *out, const g1_t *points, const fr_t *coeffs, size_t len) {
+    return g1_lincomb_fast(out, points, coeffs, len);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions for EIP-4844
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -261,7 +266,10 @@ out:
  */
 static C_KZG_RET poly_to_kzg_commitment(g1_t *out, const Polynomial *p, const KZGSettings *s) {
     return g1_lincomb_fast(
-        out, s->g1_values_lagrange_brp, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB
+        out, 
+        s->g1_values_lagrange_brp, 
+        (const fr_t *)(&p->evals),
+        FIELD_ELEMENTS_PER_BLOB
     );
 }
 

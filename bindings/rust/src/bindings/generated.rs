@@ -113,6 +113,7 @@ pub struct Cell {
     bytes: [u8; 2048usize],
 }
 extern "C" {
+    pub fn do_kzg(out: *mut g1_t, p: *const g1_t, coeffs: *const fr_t, len: usize) -> C_KZG_RET;
     pub fn blob_to_kzg_commitment(
         out: *mut KZGCommitment,
         blob: *const Blob,

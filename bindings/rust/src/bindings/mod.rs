@@ -986,7 +986,9 @@ mod tests {
         //   - Need to parse the file correctly to only pick G1 points.
         // - Construct an N-sized array of g1_t and fr_t
         // - Benchmark do_kzg()
-        //
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
 
         // Get points
         let points = kzg_settings.g1_values_lagrange_brp;

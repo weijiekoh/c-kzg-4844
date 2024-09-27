@@ -897,6 +897,8 @@ unsafe impl Send for KZGSettings {}
 mod tests {
     use super::*;
     use rand::{rngs::ThreadRng, Rng};
+    use rand_chacha::ChaCha8Rng;
+    use rand_chacha::rand_core::SeedableRng;
     use std::{fs, path::PathBuf};
     use test_formats::{
         blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_cells_and_kzg_proofs,
@@ -980,32 +982,70 @@ mod tests {
 
     #[test]
     fn benchmark_kzg() {
-        // TODO:
-        // - Write N BLS12-381 G1 Lagrange points to another src/trusted_setup.txt. Instead of
-        // generating these points, randomly sample them from the existing src/trusted_setup.txt.
-        //   - Need to parse the file correctly to only pick G1 points.
-        // - Construct an N-sized array of g1_t and fr_t
-        // - Benchmark do_kzg()
-        let trusted_setup_file = Path::new("src/trusted_setup.txt");
-        assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
+        // Create and seed a prng
+        let mut rng = ChaCha8Rng::seed_from_u64(0 as u64);
 
-        // Get points
-        let points = kzg_settings.g1_values_lagrange_brp;
+        for log_n in 15..21 {
+            let n = 1 << log_n;
 
-        let ones: fr_t = crate::bindings::blst_fr { l: [1u64; 4] };
-        let coeffs = [ones; NUM_G1_POINTS];
+            let mut coeffs = Vec::with_capacity(n);
+            let mut points = Vec::with_capacity(n);
 
-        let mut output: MaybeUninit<g1_t> = MaybeUninit::uninit();
-        unsafe {
-            // Will probably print 0s
-            println!("{:?}", output.assume_init());
+            let mut random_pt = unsafe { gen_random_g1(&mut rng) };
 
-            do_kzg(output.as_mut_ptr(), points as *const g1_t, coeffs.as_ptr(), NUM_G1_POINTS);
+            for _ in 0..n {
+                // Generate random coeffs
+                // Each fr is 32 bytes
+                coeffs.push(gen_random_fr(&mut rng));
 
-            // Should print non-zero values
-            println!("{:?}", output.assume_init());
+                points.push(random_pt);
+
+                // Generate (not-really) random points just by doubling
+                random_pt = unsafe { pt_double(random_pt) };
+            }
+
+            let mut output: MaybeUninit<g1_t> = MaybeUninit::uninit();
+
+            // Perform the MSM
+
+            let sw = stopwatch::Stopwatch::start_new();
+            unsafe {
+                do_kzg(output.as_mut_ptr(), points.as_ptr(), coeffs.as_ptr(), n);
+                //println!("{:?}", output.assume_init());
+            }
+            let elapsed = sw.elapsed_ms();
+
+            let num_kb = 32 * n / 1024;
+            println!("KZG with a polynomial containing {} 32-byte coefficients ({} kb) took {}ms", n, num_kb, elapsed);
         }
+    }
+
+    unsafe fn pt_double(pt: crate::bindings::blst_p1) -> crate::bindings::blst_p1 {
+        let mut out: MaybeUninit<g1_t> = MaybeUninit::uninit();
+        g1_double(out.as_mut_ptr(), &pt);
+        out.assume_init()
+    }
+
+    unsafe fn gen_random_g1(rng: &mut impl Rng) -> crate::bindings::blst_p1 {
+        let random_bytes = gen_random_bytes(rng);
+        let mut s: MaybeUninit<blst_scalar> = MaybeUninit::uninit();
+        let mut pt: MaybeUninit<g1_t> = MaybeUninit::uninit();
+
+        gen_scalar(s.as_mut_ptr(), random_bytes.as_ptr());
+        g1_gen_mul(pt.as_mut_ptr(), s.as_ptr());
+        pt.assume_init()
+    }
+
+    fn gen_random_bytes(rng: &mut impl Rng) -> [u8; 32] {
+        let mut bytes = [0u8; 32];
+        rng.fill(&mut bytes);
+        bytes
+    }
+
+    fn gen_random_fr(rng: &mut impl Rng) -> crate::bindings::blst_fr {
+        let mut limbs = [0u64; 4];
+        rng.fill(&mut limbs);
+        crate::bindings::blst_fr { l: limbs }
     }
 
     #[test]

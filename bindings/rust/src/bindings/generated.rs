@@ -11,7 +11,13 @@ pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 pub const BYTES_PER_CELL: usize = 2048;
 pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
 pub const CELLS_PER_EXT_BLOB: usize = 128;
+pub type byte = u8;
 pub type limb_t = u64;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub struct blst_scalar {
+    b: [byte; 32usize],
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct blst_fr {
@@ -113,7 +119,6 @@ pub struct Cell {
     bytes: [u8; 2048usize],
 }
 extern "C" {
-    pub fn do_kzg(out: *mut g1_t, p: *const g1_t, coeffs: *const fr_t, len: usize) -> C_KZG_RET;
     pub fn blob_to_kzg_commitment(
         out: *mut KZGCommitment,
         blob: *const Blob,
@@ -194,4 +199,8 @@ extern "C" {
         precompute: u64,
     ) -> C_KZG_RET;
     pub fn free_trusted_setup(s: *mut KZGSettings);
+    pub fn gen_scalar(out: *mut blst_scalar, a: *const byte);
+    pub fn g1_gen_mul(out_pk: *mut blst_p1, SK: *const blst_scalar);
+    pub fn g1_double(out_pk: *mut blst_p1, a: *const blst_p1);
+    pub fn do_kzg(out: *mut g1_t, p: *const g1_t, coeffs: *const fr_t, len: usize) -> C_KZG_RET;
 }

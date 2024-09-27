@@ -40,6 +40,8 @@ portable = ["blst/portable"]
 no-threads = ["blst/no-threads"]
 
 [dependencies]
+stopwatch = "0.0.7"
+rand_chacha = "0.3.1"
 arbitrary = { version = "1", features = ["derive"] }
 blst = { version = "0.3.12", default-features = false }
 hex = { version = "0.4.2", default-features = false, features = ["alloc"] }

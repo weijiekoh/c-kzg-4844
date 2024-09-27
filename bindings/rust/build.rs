@@ -94,6 +94,7 @@ fn make_bindings(
         .allowlist_file(".*eip4844.h")
         .allowlist_file(".*eip7594.h")
         .allowlist_file(".*setup.h")
+        .allowlist_file(".*benchmark.h")
         /*
          * Cleanup instructions.
          */

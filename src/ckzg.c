@@ -29,3 +29,4 @@
 #include "eip7594/poly.c"
 #include "eip7594/recovery.c"
 #include "setup/setup.c"
+#include "benchmark.c"

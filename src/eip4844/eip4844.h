@@ -38,9 +38,6 @@ typedef Bytes48 KZGProof;
 extern "C" {
 #endif
 
-// Function to benchmark
-C_KZG_RET do_kzg(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
-
 C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s);
 
 C_KZG_RET compute_kzg_proof(
